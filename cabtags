@@ -1,0 +1,41 @@
+#!/bin/bash
+
+proj_locs=""
+source_dirs=""
+
+# OSX sed doesn't support case-insensitive search and replace
+packages_regex='^\s*[pP][aA][cC][kK][aA][gG][eE][sS]\s*:'
+opt_packages_regex='^\s*[oO][pP][tT][iI][oO][nN][aA][lL]-[pP][aA][cC][kK][aA][gG][eE][sS]\s*:'
+sourcedir_regex='^\s*[hH][sS]-[sS][oO][uU][rR][cC][eE]-[dD][iI][rR][sS]\?\s*:'
+end_block_regex="\(:\)\|\(^\s*\([iI][fF]\|[eE][xX][eE][cC][uU][tT][aA][bB][lL][eE]\|[tT][eE][sS][tT]\|[bB][eE][nN][cC][hH][mM][aA][rR][kK]\|[lL][iI][bB][rR][aA][rR][yY]\|[pP][aA][cC][kK][aA][gG][eE]\)\s\)"
+
+for project_file in cabal.project cabal.project.local
+do
+	if grep -l "$packages_regex" "$project_file" >/dev/null 2>&1 || grep -l "$opt_packages_regex" "$project_file" >/dev/null 2>&1
+	then
+		proj_locs="$proj_locs $(sed "/$packages_regex/,/$end_block_regex/!d;s/$packages_regex//;/$end_block_regex/d" "$project_file")"
+		proj_locs="$proj_locs $(sed "/$opt_packages_regex/,/$end_block_regex/!d;s/$opt_packages_regex//;/$end_block_regex/d" "$project_file")"
+	fi
+done
+
+shopt -s nullglob
+for loc in . $proj_locs
+do
+	for candidate in "$loc" "$loc"/*.cabal
+	do
+		if grep -l "$sourcedir_regex" "$candidate" >/dev/null 2>&1
+		then
+			for source_dir in $(sed "/$sourcedir_regex/,/$end_block_regex/!d;s/$sourcedir_regex//;/$end_block_regex/d" "$candidate")
+			do
+				source_dirs="$source_dirs $loc/$source_dir"
+			done
+		# for cabal files that don't mention hs-source-dirs, use the default,
+		# which is .
+		elif [ -f "$candidate" ]
+		then
+			source_dirs="$source_dirs $(dirname "$candidate")"
+		fi
+	done
+done
+
+hasktags -R $source_dirs
