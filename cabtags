@@ -24,11 +24,18 @@ for loc in . $proj_locs
 do
 	for candidate in "$loc" "$loc"/*.cabal
 	do
+		if [ -f "$candidate" ]
+		then
+			candidate_dir=$(dirname "$candidate")
+		else
+			candidate_dir="$candidate"
+		fi
+
 		if grep -l "$sourcedir_regex" "$candidate" >/dev/null 2>&1
 		then
 			for source_dir in $(sed "/$comment_regex/d;/$sourcedir_regex/,/$end_block_regex/!d;s/$sourcedir_regex//;/$end_block_regex/d" "$candidate")
 			do
-				source_dirs="$source_dirs $loc/$source_dir"
+				source_dirs="$source_dirs $candidate_dir/$source_dir"
 			done
 		# for cabal files that don't mention hs-source-dirs, use the default,
 		# which is .
