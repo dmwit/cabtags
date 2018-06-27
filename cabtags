@@ -4,6 +4,7 @@ proj_locs=""
 source_dirs=""
 
 # OSX sed doesn't support case-insensitive search and replace
+comment_regex='^\s*--'
 packages_regex='^\s*[pP][aA][cC][kK][aA][gG][eE][sS]\s*:'
 opt_packages_regex='^\s*[oO][pP][tT][iI][oO][nN][aA][lL]-[pP][aA][cC][kK][aA][gG][eE][sS]\s*:'
 sourcedir_regex='^\s*[hH][sS]-[sS][oO][uU][rR][cC][eE]-[dD][iI][rR][sS]\?\s*:'
@@ -13,8 +14,8 @@ for project_file in cabal.project cabal.project.local
 do
 	if grep -l "$packages_regex" "$project_file" >/dev/null 2>&1 || grep -l "$opt_packages_regex" "$project_file" >/dev/null 2>&1
 	then
-		proj_locs="$proj_locs $(sed "/$packages_regex/,/$end_block_regex/!d;s/$packages_regex//;/$end_block_regex/d" "$project_file")"
-		proj_locs="$proj_locs $(sed "/$opt_packages_regex/,/$end_block_regex/!d;s/$opt_packages_regex//;/$end_block_regex/d" "$project_file")"
+		proj_locs="$proj_locs $(sed "/$comment_regex/d;/$packages_regex/,/$end_block_regex/!d;s/$packages_regex//;/$end_block_regex/d" "$project_file")"
+		proj_locs="$proj_locs $(sed "/$comment_regex/d;/$opt_packages_regex/,/$end_block_regex/!d;s/$opt_packages_regex//;/$end_block_regex/d" "$project_file")"
 	fi
 done
 
@@ -25,7 +26,7 @@ do
 	do
 		if grep -l "$sourcedir_regex" "$candidate" >/dev/null 2>&1
 		then
-			for source_dir in $(sed "/$sourcedir_regex/,/$end_block_regex/!d;s/$sourcedir_regex//;/$end_block_regex/d" "$candidate")
+			for source_dir in $(sed "/$comment_regex/d;/$sourcedir_regex/,/$end_block_regex/!d;s/$sourcedir_regex//;/$end_block_regex/d" "$candidate")
 			do
 				source_dirs="$source_dirs $loc/$source_dir"
 			done
