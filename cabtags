@@ -1,5 +1,12 @@
 #!/bin/bash
 
+if [ "$DEBUG" = 0 -o "$DEBUG" = no -o "$DEBUG" = n -o "$DEBUG" = false -o "$DEBUG" = "" ]
+then
+	DEBUG=false
+else
+	DEBUG=true
+fi
+
 proj_locs=""
 source_dirs=""
 
@@ -8,42 +15,87 @@ comment_regex='^\s*--'
 packages_regex='^\s*[pP][aA][cC][kK][aA][gG][eE][sS]\s*:'
 opt_packages_regex='^\s*[oO][pP][tT][iI][oO][nN][aA][lL]-[pP][aA][cC][kK][aA][gG][eE][sS]\s*:'
 sourcedir_regex='^\s*[hH][sS]-[sS][oO][uU][rR][cC][eE]-[dD][iI][rR][sS]\?\s*:'
-end_block_regex="\(:\)\|\(^\s*\([iI][fF]\|[eE][xX][eE][cC][uU][tT][aA][bB][lL][eE]\|[tT][eE][sS][tT]\|[bB][eE][nN][cC][hH][mM][aA][rR][kK]\|[lL][iI][bB][rR][aA][rR][yY]\|[pP][aA][cC][kK][aA][gG][eE]\)\s\)"
+end_block_regex="\(:\)\|\(^\s*\([iI][fF]\s\|[eE][lL][sS][eE]\s*\(--.*\)\?$\|[eE][xX][eE][cC][uU][tT][aA][bB][lL][eE]\s\|[tT][eE][sS][tT]\s\|[bB][eE][nN][cC][hH][mM][aA][rR][kK]\s\|[lL][iI][bB][rR][aA][rR][yY]\s\|[pP][aA][cC][kK][aA][gG][eE]\s\)\)"
 
 for project_file in cabal.project cabal.project.local
 do
 	if grep -l "$packages_regex" "$project_file" >/dev/null 2>&1 || grep -l "$opt_packages_regex" "$project_file" >/dev/null 2>&1
 	then
+		if $DEBUG
+		then
+			echo Taking package locations from "$project_file"
+		fi
 		proj_locs="$proj_locs $(sed "/$comment_regex/d;/$packages_regex/,/$end_block_regex/!d;s/$packages_regex//;/$end_block_regex/d" "$project_file")"
 		proj_locs="$proj_locs $(sed "/$comment_regex/d;/$opt_packages_regex/,/$end_block_regex/!d;s/$opt_packages_regex//;/$end_block_regex/d" "$project_file")"
 	fi
 done
+
+if $DEBUG
+then
+	echo Package locations detected:
+	echo "$proj_locs"
+fi
 
 shopt -s nullglob
 for loc in . $proj_locs
 do
 	for candidate in "$loc" "$loc"/*.cabal
 	do
-		if [ -f "$candidate" ]
+		if [ '!' -f "$candidate" ]
 		then
-			candidate_dir=$(dirname "$candidate")
-		else
-			candidate_dir="$candidate"
+			if $DEBUG
+			then
+				echo Skipping cabal file candidate "$candidate" because it is not a regular file
+			fi
+			continue
 		fi
 
-		if grep -l "$sourcedir_regex" "$candidate" >/dev/null 2>&1
+		candidate_dir=$(dirname "$candidate")
+		if $DEBUG
 		then
-			for source_dir in $(sed "/$comment_regex/d;/$sourcedir_regex/,/$end_block_regex/!d;s/$sourcedir_regex//;/$end_block_regex/d" "$candidate")
-			do
-				source_dirs="$source_dirs $candidate_dir/$source_dir"
-			done
-		# for cabal files that don't mention hs-source-dirs, use the default,
+			echo Considering cabal file "$candidate", associated with directory "$candidate_dir"
+		fi
+
+		use_default_location=true
+		for source_dir in $(sed "/$comment_regex/d;/$sourcedir_regex/,/$end_block_regex/!d;s/$sourcedir_regex//;/$end_block_regex/d" "$candidate")
+		do
+			if $DEBUG
+			then
+				echo "   " Discovered source directory "$source_dir"
+			fi
+			source_dirs="$source_dirs $candidate_dir/$source_dir"
+			use_default_location=false
+		done
+		# For cabal files that don't mention hs-source-dirs, use the default,
 		# which is .
-		elif [ -f "$candidate" ]
+		#
+		# This isn't quite right, since cabal uses this default per-component
+		# and we only use it per-cabal-file here, but in practice it seems to
+		# be close enough: in most existing cabal files, either every component
+		# specifies an hs-source-dirs, or none does.
+		if $use_default_location
 		then
-			source_dirs="$source_dirs $(dirname "$candidate")"
+			if $DEBUG
+			then
+				echo "   " No source directory discovered. Using default directory .
+			fi
+			source_dirs="$source_dirs $candidate_dir"
 		fi
 	done
 done
 
-hasktags -R $source_dirs
+if $DEBUG
+then
+	echo Final source directory list:
+	echo "$source_dirs"
+fi
+
+if [ -z "$source_dirs" ]
+then
+	if $DEBUG
+	then
+		echo No source directories found. Skipping call to hasktags.
+	fi
+else
+	hasktags -R $source_dirs
+fi

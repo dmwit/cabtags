@@ -58,6 +58,10 @@ It doesn't actually use cabal's parser, so it's probably super buggy about
 finding the right boundaries around fields. It seems to sort of work most of
 the time on the project/cabal files I tried.
 
+In some complicated cabal files that use the implicit default hs-source-dirs
+value of . in some components or conditional branches but not others, the
+implicit default directory will not be passed to hasktags.
+
 All of this could be addressed by using a real language and real parsers;
 that's definitely on the table if it turns out that the existing way fails
 often enough.
