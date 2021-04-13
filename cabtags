@@ -15,7 +15,7 @@ comment_regex='^\s*--'
 packages_regex='^\s*[pP][aA][cC][kK][aA][gG][eE][sS]\s*:'
 opt_packages_regex='^\s*[oO][pP][tT][iI][oO][nN][aA][lL]-[pP][aA][cC][kK][aA][gG][eE][sS]\s*:'
 sourcedir_regex='^\s*[hH][sS]-[sS][oO][uU][rR][cC][eE]-[dD][iI][rR][sS]\?\s*:'
-end_block_regex="\(:\)\|\(^\s*\([iI][fF]\s\|[eE][lL][sS][eE]\s*\(--.*\)\?$\|[eE][xX][eE][cC][uU][tT][aA][bB][lL][eE]\s\|[tT][eE][sS][tT]\s\|[bB][eE][nN][cC][hH][mM][aA][rR][kK]\s\|[lL][iI][bB][rR][aA][rR][yY]\s\|[pP][aA][cC][kK][aA][gG][eE]\s\)\)"
+end_block_regex="\(:\)\|\(^\s*\([iI][fF]\s\|[eE][lL][sS][eE]\s*\(--.*\)\?$\|[eE][xX][eE][cC][uU][tT][aA][bB][lL][eE]\s\|[tT][eE][sS][tT]\(-[sS][uU][iI][tT][eE]\)\?\s\|[bB][eE][nN][cC][hH][mM][aA][rR][kK]\s\|[lL][iI][bB][rR][aA][rR][yY]\s\|[pP][aA][cC][kK][aA][gG][eE]\s\)\)"
 
 for project_file in cabal.project cabal.project.local
 do
