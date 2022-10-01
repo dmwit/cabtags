@@ -57,7 +57,7 @@ do
 		fi
 
 		use_default_location=true
-		for source_dir in $(sed "/$comment_regex/d;/$sourcedir_regex/,/$end_block_regex/!d;s/$sourcedir_regex//;/$end_block_regex/d;s/,/ /" "$candidate")
+		for source_dir in $(sed "/$comment_regex/d;/$sourcedir_regex/,/$end_block_regex/!d;s/$sourcedir_regex//;/$end_block_regex/d;s/,/ /g" "$candidate")
 		do
 			if $DEBUG
 			then
